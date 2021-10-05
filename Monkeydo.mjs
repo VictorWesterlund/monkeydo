@@ -1,7 +1,8 @@
-import { default as MonkeyWorker } from "./classes/Worker.mjs";
+import { default as MonkeyWorker } from "./worker/MonkeyWorker.mjs";
 
-export default class Monekydo {
+export default class Monkeydo extends MonkeyWorker {
 	constructor(manifest = false) {
+		super();
 		this.monkeydo = {
 			version: "0.1",
 			debugLevel: 0,
@@ -14,11 +15,17 @@ export default class Monekydo {
 		};
 		Object.seal(this.monkeydo);
 
-		this.header = null;
-		this.body = null;
+		this.manifest = {
+			header: null,
+			body: null
+		};
 
 		if(!window.Worker) {
 			this.except("JavaScript Workers aren't supported by your browser");
+		}
+
+		if(manifest) {
+			this.load(manifest);
 		}
 	}
 
@@ -41,7 +48,7 @@ export default class Monekydo {
 		// Attempt to parse the argument as JSON
 		try {
 			data = JSON.parse(manifest);
-		} 
+		}
 		catch {
 			// If that fails, attempt to parse it as a URL
 			try {
@@ -65,20 +72,20 @@ export default class Monekydo {
 		
 		if(!data.hasOwnProperty("header") || !data.hasOwnProperty("body")) {
 			this.debug(data);
-			throw new Error(errorPrefix + "Object is not a Monkeydo manifest");
+			throw new Error(errorPrefix + "Expected 'header' and 'body' properties in object");
 		}
 
-		this.header = data.header;
-		this.body = data.body;
+		this.manifest.header = data.header;
+		this.manifest.body = data.body;
 		return true;
 	}
 
 	do() {
 		const errorPrefix = "DO_FAILED: ";
-		if(!this.header) {
-			this.debug(this.header);
-			throw new Error(errorPrefix + `Expected Monkeydo manifest, got '${this.header}' instead`);
+		if(!this.manifest.header) {
+			this.debug(this.manifest.header);
+			throw new Error(errorPrefix + `Expected header object from contructed property`);
 		}
-		const monkey = new MonkeyWorker();
+		this.giveManifest();
 	}
 }
