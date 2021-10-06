@@ -4,13 +4,13 @@ export default class Monkeydo extends MonkeyWorker {
 	constructor(manifest = false) {
 		super();
 		this.monkeydo = {
-			version: "0.1",
+			version: "0.2.0",
 			debugLevel: 0,
 			// Flag if debugging is enabled, regardless of level
 			get debug() { 
 				return this.debugLevel > 0 ? true : false;
 			},
-			// Set debug level. Non-verbose debugging by default
+			// Set debug level. Non-verbose debugging if called without an argument
 			set debug(level = 1) { 
 				this.debugLevel = level;
 			}
@@ -32,11 +32,27 @@ export default class Monkeydo extends MonkeyWorker {
 		}
 	}
 
-	debug(attachment = "DEBUG_EMPTY") {
+	debug(...attachment) {
 		if(this.monkeydo.debug) {
 			console.warn("-- Monkeydo debug -->",attachment);
 			return;
 		}
+	}
+
+	play() {
+		this.worker.postMessage(["SET_PLAYING",true]);
+		this.worker.addEventListener("message",message => eval(message.data));
+	}
+
+	pause() {
+		this.worker.postMessage(["SET_PLAYING",false]);
+	}
+
+	loop(times) {
+		if(!times || times === "infinite") {
+			times = -1;
+		}
+		this.setFlag("loop",times);
 	}
 
 	// Load a Monkeydo manifest from JSON via string or URL

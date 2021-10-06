@@ -11,13 +11,23 @@ export default class TaskManager {
 		this.worker = new Worker(location + "Monkey.js");
 	}
 
-	play() {
-		this.worker.postMessage(["PLAYING",true]);
-		this.worker.addEventListener("message",message => eval(message.data));
+	// Get a status flag from the worker
+	async getFlag(flag) {
+		this.worker.postMessage(["GET_FLAG",flag]);
+		const response = await new Promise((resolve) => {
+			this.worker.addEventListener("message",message => resolve(message.data));
+		});
+		return response;
 	}
 
-	pause() {
-		this.worker.postMessage(["PLAYING",false]);
+	// Set a status flag for the worker
+	async setFlag(flag,value = 0) {
+		const flagExists = await this.getFlag(flag);
+		if(!flagExists) {
+			this.debug(flagExists);
+			throw new Error("Flag does not not exist");
+		}
+		this.worker.postMessage(["SET_FLAG",[flag,value]]);
 	}
 
 	// Pass manifest to worker and await response
