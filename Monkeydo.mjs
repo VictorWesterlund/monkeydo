@@ -1,4 +1,4 @@
-import { default as MonkeyWorker } from "./worker/MonkeyWorker.mjs";
+import { default as MonkeyWorker } from "./worker/TaskManager.mjs";
 
 export default class Monkeydo extends MonkeyWorker {
 	constructor(manifest = false) {
@@ -6,22 +6,25 @@ export default class Monkeydo extends MonkeyWorker {
 		this.monkeydo = {
 			version: "0.1",
 			debugLevel: 0,
+			// Flag if debugging is enabled, regardless of level
 			get debug() { 
 				return this.debugLevel > 0 ? true : false;
 			},
-			set debug(flag = 1) { 
-				this.debugLevel = flag;
+			// Set debug level. Non-verbose debugging by default
+			set debug(level = 1) { 
+				this.debugLevel = level;
 			}
 		};
 		Object.seal(this.monkeydo);
 
+		// Monkeydo manifest parsed with load()
 		this.manifest = {
 			header: null,
 			body: null
 		};
 
 		if(!window.Worker) {
-			this.except("JavaScript Workers aren't supported by your browser");
+			throw new Error("JavaScript Workers aren't supported by your browser");
 		}
 
 		if(manifest) {
@@ -29,17 +32,17 @@ export default class Monkeydo extends MonkeyWorker {
 		}
 	}
 
-	debug(attachment = "ATTACHMENT_EMPTY") {
+	debug(attachment = "DEBUG_EMPTY") {
 		if(this.monkeydo.debug) {
 			console.warn("-- Monkeydo debug -->",attachment);
 			return;
 		}
 	}
 
+	// Load a Monkeydo manifest from JSON via string or URL
 	async load(manifest) {
 		const errorPrefix = "MANIFEST_IMPORT_FAILED: ";
 		let data;
-		// Monkeydo can only load a JSON string or URL to a JSON file
 		if(typeof manifest !== "string") {
 			this.debug(manifest);
 			throw new TypeError(errorPrefix + "Expected JSON or URL");
@@ -70,6 +73,7 @@ export default class Monkeydo extends MonkeyWorker {
 			}
 		}
 		
+		// Make sure the parsed JSON is a valid Monkeydo manifest
 		if(!data.hasOwnProperty("header") || !data.hasOwnProperty("body")) {
 			this.debug(data);
 			throw new Error(errorPrefix + "Expected 'header' and 'body' properties in object");
@@ -80,12 +84,21 @@ export default class Monkeydo extends MonkeyWorker {
 		return true;
 	}
 
-	do() {
+	// Execute tasks from Monkeydo manifest
+	async do() {
 		const errorPrefix = "DO_FAILED: ";
+		// Abort if the manifest object doesn't contain any header data
 		if(!this.manifest.header) {
 			this.debug(this.manifest.header);
 			throw new Error(errorPrefix + `Expected header object from contructed property`);
 		}
-		this.giveManifest();
+
+		// Hand over the loaded manifest to the MonkeyWorker task manager
+		const monkey = this.giveManifest();
+		monkey.then(() => this.play())
+		.catch(error => {
+			this.debug(error);
+			throw new Error(errorPrefix + "Failed to post manifest to worker thread");
+		});
 	}
 }
