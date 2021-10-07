@@ -1,10 +1,10 @@
-import { default as MonkeyWorker } from "./worker/TaskManager.mjs";
+import { default as MonkeyWorker } from "./worker/MonkeyManager.mjs";
 
 export default class Monkeydo extends MonkeyWorker {
-	constructor(manifest = false) {
-		super();
+	constructor(methods = {},manifest = false) {
+		super(methods);
 		this.monkeydo = {
-			version: "0.2.0",
+			version: "0.2.1",
 			debugLevel: 0,
 			// Flag if debugging is enabled, regardless of level
 			get debug() { 
@@ -32,26 +32,20 @@ export default class Monkeydo extends MonkeyWorker {
 		}
 	}
 
-	debug(...attachment) {
+	debug(...attachments) {
 		if(this.monkeydo.debug) {
-			console.warn("-- Monkeydo debug -->",attachment);
+			console.warn("-- Monkeydo debug -->",attachments);
 			return;
 		}
 	}
 
-	play() {
-		this.worker.postMessage(["SET_PLAYING",true]);
-		this.worker.addEventListener("message",message => eval(message.data));
-	}
-
-	pause() {
-		this.worker.postMessage(["SET_PLAYING",false]);
-	}
-
-	loop(times) {
-		if(!times || times === "infinite") {
-			times = -1;
+	// Loop playback; -1 or false = infinite
+	loop(times = -1) {
+		// Typecast boolean to left shifted integer;
+		if(typeof times === "boolean") {
+			times = times ? -1 : 0;
 		}
+		times = times < 0 ? -1 : times;
 		this.setFlag("loop",times);
 	}
 
@@ -111,10 +105,6 @@ export default class Monkeydo extends MonkeyWorker {
 
 		// Hand over the loaded manifest to the MonkeyWorker task manager
 		const monkey = this.giveManifest();
-		monkey.then(() => this.play())
-		.catch(error => {
-			this.debug(error);
-			throw new Error(errorPrefix + "Failed to post manifest to worker thread");
-		});
+		this.play();
 	}
 }

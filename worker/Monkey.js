@@ -11,7 +11,7 @@ class Monkey {
 			loop: 0, // Loop n times; <0 = infinite
 		}
 
-		this.i = 0;
+		this.i = 0; // Manifest iterator index
 		this.queue = {
 			task: null,
 			next: null
@@ -20,10 +20,9 @@ class Monkey {
 	}
 
 	// Parse task components and send them to main thread
-	run(data) {
+	run(task) {
 		this.i++; // Advance index
-		postMessage(data);
-		console.log(this.i);
+		postMessage(["TASK",task]);
 	}
 
 	// Interrupt timeout and put monkey to sleep
@@ -36,6 +35,7 @@ class Monkey {
 	}
 
 	play() {
+		// Stack playback as loops if flag is set
 		if(this.flags.playing) {
 			if(this.flags.stacking) {
 				this.flags.loop++;
@@ -49,9 +49,14 @@ class Monkey {
 	queueNext() {
 		this.flags.playing = 1;
 		const data = this.data[this.i];
+		const task = {
+			wait: data[0],
+			func: data[1],
+			args: data.slice(2)
+		};
 
 		// Schedule the current task to run after the specified wait time
-		this.queue.task = setTimeout(() => this.run(data.do),data.wait);
+		this.queue.task = setTimeout(() => this.run(task),task.wait);
 
 		// We're out of tasks to schedule..
 		if(this.i >= this.dataLength) {
@@ -62,13 +67,14 @@ class Monkey {
 				return false;
 			}
 			
-			if(this.flags.loop <= -1) {
+			// Decrement loop iterations if not infinite (negative int)
+			if(this.flags.loop > 0) {
 				this.flags.loop = this.flags.loop - 1;
 			}
 		}
 
 		// Run this function again when the scheduled task will fire
-		this.queue.next = setTimeout(() => this.queueNext(),data.wait);
+		this.queue.next = setTimeout(() => this.queueNext(),task.wait);
 	}
 }
 
@@ -82,20 +88,18 @@ onmessage = (message) => {
 		case "GIVE_MANIFEST":
 			try {
 				this.monkey = new Monkey(data);
-				postMessage("OK");
+				postMessage(["RECEIVED_MANIFEST","OK"]);
 			}
 			catch(error) {
-				postMessage(["MANIFEST_ERROR",error]);
+				postMessage(["RECEIVED_MANIFEST",error]);
 			}
 			break;
 
-		// Set playstate
 		case "SET_PLAYING":
 			if(data === true) {
 				this.monkey.play();
 				return;
 			}
-			// Treat data that isn't a TRUE boolean as an interrupt
 			this.monkey.interrupt();
 			break;
 
@@ -105,7 +109,6 @@ onmessage = (message) => {
 			break;
 
 		case "SET_FLAG":
-			console.log(data);
 			this.monkey.flags[data[0]] = data[1];
 			break;
 
