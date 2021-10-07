@@ -5,7 +5,13 @@ class Monkey {
 		this.data = manifest.body;
 		this.dataLength = this.data.length - 1;
 
-		this.i = 0;
+		this.flags = {
+			playing: 0,
+			stacking: 0, // Subsequent calls to play() will build a queue (jQuery-style)
+			loop: 0, // Loop n times; <0 = infinite
+		}
+
+		this.i = 0; // Manifest iterator index
 		this.queue = {
 			task: null,
 			next: null
@@ -13,50 +19,97 @@ class Monkey {
 		Object.seal(this.queue);
 	}
 
-	run(data) {
-		this.i++;
-		postMessage(data);
+	// Parse task components and send them to main thread
+	run(task) {
+		this.i++; // Advance index
+		postMessage(["TASK",task]);
 	}
 
-	queueNext() {
-		const data = this.data[this.i];
-		this.queue.task = setTimeout(() => this.run(data.do),data.wait);
-
-		// Schedule next task if it's not the last
-		if(this.i >= this.dataLength) {
-			this.i = 0;
-			return false;
-		}
-		
-		this.queue.next = setTimeout(() => this.queueNext(),data.wait);
-	}
-
+	// Interrupt timeout and put monkey to sleep
 	interrupt() {
 		clearTimeout(this.queue.task);
 		clearTimeout(this.queue.next);
 		this.queue.task = null;
 		this.queue.next = null;
+		this.flags.playing = 0;
+	}
+
+	play() {
+		// Stack playback as loops if flag is set
+		if(this.flags.playing) {
+			if(this.flags.stacking) {
+				this.flags.loop++;
+			}
+			return;
+		}
+		this.queueNext();
+	}
+
+	// Schedule task for execution by index
+	queueNext() {
+		this.flags.playing = 1;
+		const data = this.data[this.i];
+		const task = {
+			wait: data[0],
+			func: data[1],
+			args: data.slice(2)
+		};
+
+		// Schedule the current task to run after the specified wait time
+		this.queue.task = setTimeout(() => this.run(task),task.wait);
+
+		// We're out of tasks to schedule..
+		if(this.i >= this.dataLength) {
+			this.i = -1;
+			// Exit if we're out of loops
+			if(this.flags.loop === 0) {
+				this.flags.playing = 0;
+				return false;
+			}
+			
+			// Decrement loop iterations if not infinite (negative int)
+			if(this.flags.loop > 0) {
+				this.flags.loop = this.flags.loop - 1;
+			}
+		}
+
+		// Run this function again when the scheduled task will fire
+		this.queue.next = setTimeout(() => this.queueNext(),task.wait);
 	}
 }
 
-// Global event handler for this worker
+// Global message event handler for this worker
 onmessage = (message) => {
-	const type = message.data[0] ? message.data[0] : null;
+	const type = message.data[0] ? message.data[0] : message.data;
 	const data = message.data[1];
 
 	switch(type) {
+		// Attempt to load manfiest provided by initiator thread
 		case "GIVE_MANIFEST":
 			try {
 				this.monkey = new Monkey(data);
-				postMessage("OK");
+				postMessage(["RECEIVED_MANIFEST","OK"]);
 			}
 			catch(error) {
-				postMessage(["MANIFEST_ERROR",error]);
+				postMessage(["RECEIVED_MANIFEST",error]);
 			}
 			break;
 
-		case "PLAYING":
-			this.monkey.queueNext();
+		case "SET_PLAYING":
+			if(data === true) {
+				this.monkey.play();
+				return;
+			}
+			this.monkey.interrupt();
+			break;
+
+		case "GET_FLAG":
+			const flag = this.monkey.flags[data];
+			postMessage(parseInt(flag));
+			break;
+
+		case "SET_FLAG":
+			this.monkey.flags[data[0]] = data[1];
 			break;
 
 		default: return; // No op
