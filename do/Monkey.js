@@ -16,8 +16,7 @@ class Monkey {
 					return false;
 				}
 				// Toggle playback direction
-				console.log(this);
-				self.data = self.data.reverse();
+				self.tasks = self.tasks.reverse();
 				this._forwards = 1 - this._forwards;
 			},
 			get forwards() {
