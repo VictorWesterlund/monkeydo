@@ -3,8 +3,8 @@
 class Monkey {
 	constructor(manifest) {
 		const self = this;
-		this.data = manifest.body;
-		this.dataLength = this.data.length - 1;
+		this.tasks = manifest.tasks;
+		this.tasksLength = this.tasks.length - 1;
 
 		this.flags = {
 			playing: 0,
@@ -62,7 +62,7 @@ class Monkey {
 	// Schedule task for execution by index
 	queueNext() {
 		this.flags.playing = 1;
-		const data = this.data[this.i];
+		const data = this.tasks[this.i];
 		const task = {
 			wait: data[0],
 			func: data[1],
@@ -73,7 +73,7 @@ class Monkey {
 		this.queue.task = setTimeout(() => this.run(task),task.wait);
 
 		// We're out of tasks to schedule..
-		if(this.i >= this.dataLength) {
+		if(this.i >= this.tasksLength) {
 			this.i = -1;
 			// Exit if we're out of loops
 			if(this.flags.loop === 0) {

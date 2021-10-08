@@ -19,8 +19,7 @@ export default class Monkeydo extends MonkeyWorker {
 
 		// Monkeydo manifest parsed with load()
 		this.manifest = {
-			header: null,
-			body: null
+			tasks: null
 		};
 
 		if(!window.Worker) {
@@ -84,25 +83,17 @@ export default class Monkeydo extends MonkeyWorker {
 		}
 		
 		// Make sure the parsed JSON is a valid Monkeydo manifest
-		if(!data.hasOwnProperty("header") || !data.hasOwnProperty("body")) {
+		if(!data.hasOwnProperty("tasks")) {
 			this.debug(data);
 			throw new Error(errorPrefix + "Expected 'header' and 'body' properties in object");
 		}
 
-		this.manifest.header = data.header;
-		this.manifest.body = data.body;
+		this.manifest.tasks = data.tasks;
 		return true;
 	}
 
 	// Execute tasks from Monkeydo manifest
-	async do() {
-		const errorPrefix = "DO_FAILED: ";
-		// Abort if the manifest object doesn't contain any header data
-		if(!this.manifest.header) {
-			this.debug(this.manifest.header);
-			throw new Error(errorPrefix + `Expected header object from contructed property`);
-		}
-
+	do() {
 		// Hand over the loaded manifest to the MonkeyWorker task manager
 		const monkey = this.giveManifest();
 		this.play();
