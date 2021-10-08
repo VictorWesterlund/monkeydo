@@ -1,4 +1,4 @@
-import { default as MonkeyWorker } from "./worker/MonkeyManager.mjs";
+import { default as MonkeyWorker } from "./do/MonkeyManager.mjs";
 
 export default class Monkeydo extends MonkeyWorker {
 	constructor(methods = {},manifest = false) {

@@ -1,7 +1,8 @@
-// Task scheduler and iterator of Monkeydo manifests
+// Dedicated worker which executes tasks from a Monkeydo manifest
 
 class Monkey {
 	constructor(manifest) {
+		const self = this;
 		this.data = manifest.body;
 		this.dataLength = this.data.length - 1;
 
@@ -9,6 +10,19 @@ class Monkey {
 			playing: 0,
 			stacking: 0, // Subsequent calls to play() will build a queue (jQuery-style)
 			loop: 0, // Loop n times; <0 = infinite
+			_forwards: 1, // Playback direction
+			set forwards(forwards = true) {
+				if(forwards == this._forwards) {
+					return false;
+				}
+				// Toggle playback direction
+				console.log(this);
+				self.data = self.data.reverse();
+				this._forwards = 1 - this._forwards;
+			},
+			get forwards() {
+				return this._forwards;
+			}
 		}
 
 		this.i = 0; // Manifest iterator index
@@ -37,7 +51,7 @@ class Monkey {
 	play() {
 		// Stack playback as loops if flag is set
 		if(this.flags.playing) {
-			if(this.flags.stacking) {
+			if(this.flags.stacking && this.flags.loop >= 0) {
 				this.flags.loop++;
 			}
 			return;

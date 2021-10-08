@@ -13,6 +13,8 @@ export default class MonkeyManager {
 		// Spawn a dedicated worker for scheduling events from manifest
 		this.worker = new Worker(location + "Monkey.js");
 		this.worker.addEventListener("message",message => this.message(message));
+
+		this.reversed = false;
 	}
 
 	// Get a status flag from the worker
