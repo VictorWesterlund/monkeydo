@@ -95,7 +95,6 @@ export default class Monkeydo extends MonkeyWorker {
 	// Execute tasks from Monkeydo manifest
 	do() {
 		// Hand over the loaded manifest to the MonkeyWorker task manager
-		const monkey = this.giveManifest();
-		this.play();
+		this.giveManifest().then(() => this.play());
 	}
 }

@@ -82,7 +82,7 @@ class Monkey {
 			
 			// Decrement loop iterations if not infinite (negative int)
 			if(this.flags.loop > 0) {
-				this.flags.loop = this.flags.loop - 1;
+				this.flags.loop--;
 			}
 		}
 
