@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="400" src="https://storage.googleapis.com/public.victorwesterlund.com/github/VictorWesterlund/monkeydo/monkeydo.svg"/>
+  <img width="400" src="https://storage.googleapis.com/public.victorwesterlund.com/github/VictorWesterlund/monkeydo/monkeydo_.svg"/>
 </p>
 <h3 align="center">Threaded task chaining for JavaScript</h3>
 <hr>
