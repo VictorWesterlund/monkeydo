@@ -3,6 +3,7 @@
 class Monkey {
 	constructor(manifest) {
 		const self = this;
+
 		this.tasks = manifest.tasks;
 		this.tasksLength = this.tasks.length - 1;
 
@@ -32,10 +33,10 @@ class Monkey {
 		Object.seal(this.queue);
 	}
 
-	// Parse task components and send them to main thread
+	// Pass task to main thread for execution
 	run(task) {
-		this.i++; // Advance index
 		postMessage(["TASK",task]);
+		this.i++;
 	}
 
 	// Interrupt timeout and put monkey to sleep
@@ -91,7 +92,7 @@ class Monkey {
 	}
 }
 
-// Global message event handler for this worker
+// Event handler for messages received from initiator
 onmessage = (message) => {
 	const type = message.data[0] ? message.data[0] : message.data;
 	const data = message.data[1];

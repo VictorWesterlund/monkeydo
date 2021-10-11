@@ -37,26 +37,11 @@ export default class MonkeyManager {
 		this.worker.postMessage(["SET_FLAG",[flag,value]]);
 	}
 
-	// Call method from object and pass arguments
-	runTask(task) {
-		this.methods[task.func](...task.args);
-	}
-
-	play() {
-		this.worker.postMessage(["SET_PLAYING",true]);
-	}
-
-	pause() {
-		this.worker.postMessage(["SET_PLAYING",false]);
-	}
-
-	// Pass manifest to worker and await response
-	async giveManifest() {
-		this.worker.postMessage(["GIVE_MANIFEST",this.manifest]);
-
+	// Get acknowledgement from worker for a transactional operation
+	async ack(name) {
 		const status = await new Promise((resolve,reject) => {
 			const ack = this.worker.addEventListener("message",message => {
-				if(message.data[0] !== "RECEIVED_MANIFEST") {
+				if(message.data[0] !== name) {
 					return false;
 				}
 
@@ -70,12 +55,40 @@ export default class MonkeyManager {
 		return status;
 	}
 
+	// Pass manifest to worker and await response from worker
+	async giveManifest() {
+		this.worker.postMessage(["GIVE_MANIFEST",this.manifest]);
+		const status = await this.ack("RECEIVED_MANIFEST");
+		return status;
+	}
+
+	// Call method from object and pass arguments
+	run(task) {
+		this.methods[task.func](...task.args);
+	}
+
+	play() {
+		this.worker.postMessage(["SET_PLAYING",true]);
+	}
+
+	pause() {
+		this.worker.postMessage(["SET_PLAYING",false]);
+	}
+
+	// Event handler for messages received from worker
 	message(message) {
 		const type = message.data[0] ? message.data[0] : message.data;
 		const data = message.data[1];
-		if(type !== "TASK") {
-			return false;
+
+		switch(type) {
+			case "TASK":
+				this.run(data);
+				break;
+
+			case "DEBUG":
+			default:
+				this.debug("MESSAGE_FROM_WORKER",message.data);
+				break;
 		}
-		this.runTask(data);
 	}
 }

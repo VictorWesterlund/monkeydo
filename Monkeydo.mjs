@@ -1,7 +1,7 @@
 import { default as MonkeyWorker } from "./do/MonkeyManager.mjs";
 
 export default class Monkeydo extends MonkeyWorker {
-	constructor(methods = {},manifest = false) {
+	constructor(methods = {}) {
 		super(methods);
 		this.monkeydo = {
 			version: "0.2.1",
@@ -24,10 +24,6 @@ export default class Monkeydo extends MonkeyWorker {
 
 		if(!window.Worker) {
 			throw new Error("JavaScript Workers aren't supported by your browser");
-		}
-
-		if(manifest) {
-			this.load(manifest);
 		}
 	}
 
