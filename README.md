@@ -56,7 +56,7 @@ const methods = {
 <pre lang="json">
 {
   "tasks": [
-    [0,"myJavaSriptMethod","I see skies of","blue"],
+    [0,"myJavaSriptMethod","I see trees of","green"],
     [300,"myJavaSriptMethod","red","roses too"],
     [160,"myJavaSriptMethod","I see them","bloom"],
     [1200,"myJavaSriptMethod","for","me and you"]
@@ -73,7 +73,7 @@ monkey.do();
 </ol>
 <p>The example above would be the same as running:</p>
 <pre lang="js">
-console.log("I see skies","of blue"); // Right away
+console.log("I see trees of","green"); // Right away
 console.log("red","roses too"); // 300 milliseconds after the first
 console.log("I see them","bloom"); // 160 milliseconds after that one
 console.log("for","me and you"); // and lastly, 1200 after that
