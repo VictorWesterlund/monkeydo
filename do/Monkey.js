@@ -92,6 +92,9 @@ class Monkey {
 	}
 }
 
+// Unspawned monkey target
+let monkey = undefined;
+
 // Event handler for messages received from initiator
 onmessage = (message) => {
 	const type = message.data[0] ? message.data[0] : message.data;
@@ -101,7 +104,7 @@ onmessage = (message) => {
 		// Attempt to load manfiest provided by initiator thread
 		case "GIVE_MANIFEST":
 			try {
-				this.monkey = new Monkey(data);
+				monkey = new Monkey(data);
 				postMessage(["RECEIVED_MANIFEST","OK"]);
 			}
 			catch(error) {
@@ -111,19 +114,19 @@ onmessage = (message) => {
 
 		case "SET_PLAYING":
 			if(data === true) {
-				this.monkey.play();
+				monkey.play();
 				return;
 			}
-			this.monkey.interrupt();
+			monkey.interrupt();
 			break;
 
 		case "GET_FLAG":
-			const flag = this.monkey.flags[data];
+			const flag = monkey.flags[data];
 			postMessage(parseInt(flag));
 			break;
 
 		case "SET_FLAG":
-			this.monkey.flags[data[0]] = data[1];
+			monkey.flags[data[0]] = data[1];
 			break;
 
 		default: return; // No op

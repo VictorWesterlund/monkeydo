@@ -15,6 +15,11 @@ export default class MonkeyManager {
 		this.worker.addEventListener("message",message => this.message(message));
 
 		this.reversed = false;
+
+		this.init = {
+			ready: false,
+			flags: []
+		}
 	}
 
 	// Get a status flag from the worker
@@ -29,6 +34,12 @@ export default class MonkeyManager {
 
 	// Set a status flag for the worker
 	async setFlag(flag,value = 0) {
+		// Player is not initialized, add flag to queue
+		if(!this.init.ready) {
+			this.init.flags.push([flag,value]);
+			return false;
+		}
+
 		const flagExists = await this.getFlag(flag);
 		if(flagExists === null) {
 			this.debug(flagExists);
@@ -48,6 +59,7 @@ export default class MonkeyManager {
 				if(message.data[1] !== "OK") {
 					reject(message.data);
 				}
+				this.init.ready = true;
 				resolve();
 			});
 			this.worker.removeEventListener("message",ack);
@@ -60,6 +72,13 @@ export default class MonkeyManager {
 		this.worker.postMessage(["GIVE_MANIFEST",this.manifest]);
 		const status = await this.ack("RECEIVED_MANIFEST");
 		return status;
+	}
+
+	initFlags() {
+		if(this.init.flags.length > 0) {
+			this.init.flags.forEach(flag => this.setFlag(...flag));
+		}
+		this.init.flags = [];
 	}
 
 	// Call method from object and pass arguments
