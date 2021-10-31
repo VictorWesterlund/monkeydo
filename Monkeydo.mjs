@@ -64,7 +64,7 @@ export default class Monkeydo extends MonkeyWorker {
 				const fetchManifest = await fetch(manifest);
 				
 				// If the URL parsed but the fetch response is invalid, give up and throw an error
-				if(!fetchManifest.ok || fetchManifest.headers.get("Content-Type") !== "application/json") {
+				if(!fetchManifest.ok || !fetchManifest.headers.get("Content-Type")?.includes("application/json")) {
 					throw new TypeError(errorPrefix + "Invalid response Content-Type or HTTP status");
 				}
 				data = await fetchManifest.json();
