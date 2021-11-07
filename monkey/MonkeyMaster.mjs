@@ -1,55 +1,68 @@
 // Task manager for Monkeydo dedicated workers (monkeys)
 
-class WorkerTransactions {
+import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+
+export default class MonkeyMaster {
 	constructor() {
-		this.txn = {
-			_open: [], // Open transations
-			prefix: "TXN",
-			timeout: 2000,
-			// Close a transaction
-			set close(name) {
-				this._open[name].resolve();
-			},
-			// Open a new transaction
-			set open(name) {
-				name = [this.prefix,name];
-				name = name.join("_").toUpperCase();
-				this._open[name] = new Promise();
-			},
-			get status(name) {
-				return this._open[name];
+		this.comlink = null;
+
+		this.ready = false;
+		this.flagQueue = [];
+		this.init();
+	}
+
+	// Import worker relative to this module
+	getWorkerPath() {
+		const name = "Monkey.js";
+		const url = new URL(import.meta.url);
+
+		const path = url.pathname.split("/");
+		path[path.length - 1] = name;
+
+		url.pathname = path.join("/");
+		return url.toString();
+	}
+
+	async init() {
+		// Spawn and wrap dedicated worker with Comlink
+		const worker = new Worker(this.getWorkerPath());
+		const Monkey = Comlink.wrap(worker);
+
+		this.comlink = await new Monkey();
+	}
+
+	// Return a flag array index by name
+	flagStringToIndex(flag) {
+		const flags = [
+			"MANIFEST_LOADED",
+			"PLAYING",
+			"LOOP"
+		];
+		// Translate string to index
+		if(typeof flag === "string" || flag < 0) {
+			const key = flags.indexOf(flag.toUpperCase());
+			if(key < 0) {
+				return false;
 			}
 		}
-	}
-}
-
-export default class MonkeyMaster extends WorkerTransactions {
-	constructor() {
-		super();
-		// Spawn dedicated worker
-		this.monkey = new Worker("Monkey.js");
-		this.monkey.addEventListener("message",message => this.receive(message.data));
-
-		if(this?.crossOriginIsolateds === true) {
-			// TODO; SharedArrayBuffer goes here
+		// Check key is in bounds
+		if(flag < 0 || flags > flags.length - 1) {
+			throw new Error(`Array key '${flag}' out of range`);
 		}
+		return flag;
 	}
 
-	send(data) {
-		this.monkey.postMessage(data);
+	async getFlag(flag) {
+		const key = this.flagStringToIndex(flag);
+		return await this.comlink.flag(key);
+	}
+
+	async setFlag(flag,value) {
+		const key = this.flagStringToIndex(flag);
+		const update = await this.comlink.flag(0,12);
+		if(!update) {
+			this.flagQueue.push([key,value]);
+		}
 		return true;
-	}
-
-	async receive(data) {
-		if(data[0] === "TASK") {
-			this.do(data[1]);
-			return;
-		}
-		this.txn.close = data[1];
-	}
-
-	async transaction(name,data) {
-		this.txn.open = name;
-		const send = this.send([this.txn.prefix,name,data]);
 	}
 }

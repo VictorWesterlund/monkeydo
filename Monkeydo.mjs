@@ -20,14 +20,6 @@ export default class Monkeydo extends MonkeyMaster {
 	}
 
 	async load(manifest) {
-		let data = "";
-		if(typeof manifest === "object") {
-			data = JSON.stringify(manifest);
-		}
-		const load = await this.transaction("LOAD_MANIFEST",manifest);
-		if(!load) {
-			throw new Error("Failed to load manifest");
-		}
-		return true;
+		
 	}
 }
