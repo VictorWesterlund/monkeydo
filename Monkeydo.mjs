@@ -10,16 +10,32 @@ export default class Monkeydo extends MonkeyMaster {
 		Object.assign(this.methods,methods);
 	}
 
+	// Execute a task
 	do(task) {
-		console.log("TASK",task);
+		if(!task[1] in this.methods) return;
+		const args = task.splice(0,2);
+		this.methods[task[1]](...args);
 	}
 
-	async loop(times = null) {
-		times = times < 0 ? null : times;
-		return await this.setFlag("loop",times);
+	async debug(state = true) {
+		return await this.setFlag("debug",state);
 	}
 
+	// Loop playback X times or negative number for infinite
+	async loop(times = 255) {
+		if(typeof times !== "number") {
+			times = parseInt(times);
+		}
+		// Clamp number to 8 bit max
+		times = Math.min(Math.max(times,0),255);
+		return await this.setFlag("playing",times);
+	}
+
+	// Load Monkeydo manifest
 	async load(manifest) {
-		
+		if(typeof manifest === "object") {
+			manifest = JSON.stringify(manifest);
+		}
+		return await this.loadManifest(manifest);
 	}
 }
