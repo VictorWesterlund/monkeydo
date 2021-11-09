@@ -26,8 +26,8 @@ export default class Monkeydo extends MonkeyMaster {
 		if(typeof times !== "number") {
 			times = parseInt(times);
 		}
-		// Clamp number to 8 bit max
-		times = Math.min(Math.max(times,0),255);
+		times = Math.floor(times);
+		times = Math.min(Math.max(times,0),255); // Clamp number to 8 bits
 		return await this.setFlag("playing",times);
 	}
 
@@ -37,5 +37,15 @@ export default class Monkeydo extends MonkeyMaster {
 			manifest = JSON.stringify(manifest);
 		}
 		return await this.loadManifest(manifest);
+	}
+
+	async play(manifest = null) {
+		if(!this.ready && !manifest) throw new Error("Can not start playback without a manifest");
+		if(manifest) {
+			const load = this.load(manifest)
+			load.then(() => this.start());
+			return;
+		}
+		return await this.start();
 	}
 }

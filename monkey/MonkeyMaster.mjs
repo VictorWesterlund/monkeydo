@@ -18,8 +18,7 @@ export default class MonkeyMaster {
 				// Copy flags and clear queue
 				const flags = [...this.queue._flags];
 				this.queue._flags = [];
-
-				flags.forEach(flag => this.setFlag(flag));
+				flags.forEach(flag => this.setFlag(...flag));
 			}
 		};
 	}
@@ -40,6 +39,11 @@ export default class MonkeyMaster {
 	async init() {
 		// Spawn and wrap dedicated worker with Comlink
 		const worker = new Worker(this.getWorkerPath());
+		worker.addEventListener("message",event => {
+			if(event.data[0] !== "TASK") return;
+			this.do(event.data);
+		});
+
 		const Monkey = Comlink.wrap(worker);
 		this.comlink = await new Monkey();
 
@@ -60,13 +64,14 @@ export default class MonkeyMaster {
 			"PLAYING"
 		];
 
+		
 		// Translate string to index
 		if(typeof flag === "string" || flag < 0) {
-			const key = flags.indexOf(flag.toUpperCase());
-			if(key < 0) return;
+			flag = flags.indexOf(flag.toUpperCase());
+			if(flag < 0) return;
 		}
 
-		// Check key is in bounds
+		// Check that key is in bounds
 		if(flag < 0 || flags > flags.length - 1) {
 			throw new Error(`Array key '${flag}' out of range`);
 		}
@@ -94,15 +99,28 @@ export default class MonkeyMaster {
 		return update;
 	}
 
+	// Load a Monkeydo manifest by URL or JSON string
 	async loadManifest(manifest) {
 		if(!this.ready) await this.init();
-		try {
-			const url = new URL(manifest);
-			this.comlink.fetchManifest(url.toString());
-		}
-		catch {
-			this.comlink.loadManifest(manifest);
-		}
-		return true;
+		return await new Promise((resolve,reject) => {
+			let load = null;
+			try {
+				const url = new URL(manifest);
+				load = this.comlink.fetchManifest(url.toString());
+			}
+			catch {
+				load = this.comlink.loadManifest(manifest);
+			}
+			load.then(() => resolve())
+			.catch(() => reject("Failed to load manifest"));
+		});
+	}
+
+	// Start playback of a loaded manifest
+	async start() {
+		// Set playstate if no value is present already
+		const loop = await this.getFlag("playing");
+		if(loop < 1) await this.setFlag("playing",1);
+		return await this.comlink.next();
 	}
 }

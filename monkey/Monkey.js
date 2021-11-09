@@ -6,6 +6,8 @@ class Monkey {
 	constructor() {
 		this.flags = new Uint8ClampedArray(2);
 		this.tasks = [];
+		this.tasksLength = 0;
+		this.i = 0;
 		// Runtime task queue
 		this.queue = {
 			thisTask: null,
@@ -15,21 +17,22 @@ class Monkey {
 
 	// Task scheduler
 	next() {
-		if(this.flags[0] === 0) return;
+		if(this.flags[0] === 0 || this.flags[1] === 0) return;
 		const task = this.tasks[this.i];
+		console.log(task,this.i);
 
 		// Run task after delay
 		this.queue.thisTask = setTimeout(() => {
 			// Dispatch task to main thread
-			this.postMessage(["TASK",task]);
+			postMessage(["TASK",task]);
 			this.i++;
 		},task[0]);
 
 		// Loop until flag is 0 or infinite if 255
-		if(this.i === this.tasks.length) {
+		if(this.i === this.tasksLength) {
 			this.i = 0;
-			if(flags[1] === 255) return;
-			flags[1]--;
+			if(this.flags[1] === 255) return;
+			this.flags[1]--;
 		}
 
 		// Queue the next task
@@ -52,6 +55,11 @@ class Monkey {
 	// Fetch and install manifest from URL
 	async fetchManifest(url) {
 		const manifest = await fetch(url);
+		if(!manifest.ok) {
+			console.error("Monkeydo fetch error:",manifest);
+			throw new Error("Server responded with an error");
+		};
+		
 		const json = await manifest.json();
 		return await this.loadManifest(json);
 	}
@@ -68,6 +76,8 @@ class Monkey {
 				}
 			}
 			this.tasks = manifest.tasks;
+			// Store length as property so we don't have to calculate the offset each iteration of next()
+			this.tasksLength = manifest.tasks.length - 1;
 			this.flags[0] = 1; // Manifest loaded: true
 			resolve();
 		});
