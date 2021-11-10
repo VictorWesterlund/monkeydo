@@ -38,12 +38,12 @@
 <h1 align="center">Use Monkeydo</h1>
 <p>Monkeydo comes as an importable ECMAScript 6 module. In this guide we'll import this directly from a <i>./modules/</i> folder, but any web-accesible location will work.</p>
 <ol>
-  <li>Import <code>Monkeydo</code> from your repo clone or download
+  <li><strong>Import <code>Monkeydo</code> as an ES6 module</strong>
 <pre lang="js">
-import { default } from "./modules/Monkeydo/Monkeydo.mjs";
+import { default as Monkeydo } from "./modules/Monkeydo/Monkeydo.mjs";
 </pre>
   </li>
-    <li>Define your JS methods
+  <li><strong>Define your JS methods in an object</strong>
 <pre lang="js">
 const methods = {
   myJavaScriptMethod: (foo,bar) => {
@@ -52,29 +52,27 @@ const methods = {
 }
 </pre>
   </li>
-  <li>Define your tasks in a JSON file (or directly in JavaScript)
+  <li><strong>Define your tasks in a JSON manifest (file or JSON-compatible JavaScript)</strong>
 <pre lang="json">
 {
   "tasks": [
-    [0,"myJavaSriptMethod","I see trees of","green"],
-    [300,"myJavaSriptMethod","red","roses too"],
-    [160,"myJavaSriptMethod","I see them","bloom"],
-    [1200,"myJavaSriptMethod","for","me and you"]
+    [0,"myJavaSriptMethod","Just like a","monkey"],
+    [1200,"myJavaSriptMethod","I've been","dancing"],
+    [160,"myJavaSriptMethod","my whole","life"]
   ]
 }
 </pre>
   </li>
-  <li>Initialize and run <code>Monkeydo</code> with your methods and manifest
+  <li><strong>Initialize and run <code>Monkeydo</code> with your methods and manifest</strong>
 <pre lang="js">
-const monkey = new Monkeydo(methods,manifest);
-monkey.do();
+const monkey = new Monkeydo(methods);
+monkey.play(manifest);
 </pre>
   </li>
 </ol>
 <p>The example above would be the same as running:</p>
 <pre lang="js">
-console.log("I see trees of","green"); // Right away
-console.log("red","roses too"); // 300 milliseconds after the first
-console.log("I see them","bloom"); // 160 milliseconds after that one
-console.log("for","me and you"); // and lastly, 1200 after that
+console.log("Just like a","monkey"); // Right away
+console.log("I've been","dancing"); // 1.2 seconds after the first
+console.log("my whole","life"); // and then 160 milliseconds after the second
 </pre>
