@@ -4,7 +4,7 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 
 class Monkey {
 	constructor() {
-		this.flags = new Uint8ClampedArray(2);
+		this.flags = new Uint8ClampedArray(3);
 		this.tasks = [];
 		this.tasksLength = 0;
 		this.i = 0;
@@ -17,9 +17,8 @@ class Monkey {
 
 	// Task scheduler
 	next() {
-		if(this.flags[0] === 0 || this.flags[1] === 0) return;
+		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
 		const task = this.tasks[this.i];
-		console.log(task,this.i);
 
 		// Run task after delay
 		this.queue.thisTask = setTimeout(() => {
@@ -30,9 +29,8 @@ class Monkey {
 
 		// Loop until flag is 0 or infinite if 255
 		if(this.i === this.tasksLength) {
-			this.i = 0;
-			if(this.flags[1] === 255) return;
-			this.flags[1]--;
+			this.i = -1;
+			if(this.flags[1] < 255) this.flags[2]--;
 		}
 
 		// Queue the next task
@@ -40,11 +38,11 @@ class Monkey {
 	}
 
 	abort() {
+		this.flags[2] = 0; // Playing: false
 		clearTimeout(this.queue.thisTask);
 		clearTimeout(this.queue.nextTask);
 		this.queue.thisTask = null;
 		this.queue.nextTask = null;
-		this.flags[1] = 0; // Playing: false
 	}
 
 	// Set or get a runtime flag

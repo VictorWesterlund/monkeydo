@@ -41,7 +41,7 @@ export default class MonkeyMaster {
 		const worker = new Worker(this.getWorkerPath());
 		worker.addEventListener("message",event => {
 			if(event.data[0] !== "TASK") return;
-			this.do(event.data);
+			this.do(event.data[1]); // Send inner array (task)
 		});
 
 		const Monkey = Comlink.wrap(worker);
@@ -61,31 +61,32 @@ export default class MonkeyMaster {
 	flagStringToIndex(flag) {
 		const flags = [
 			"MANIFEST_LOADED",
+			"LOOP",
 			"PLAYING"
 		];
-
 		
 		// Translate string to index
 		if(typeof flag === "string" || flag < 0) {
 			flag = flags.indexOf(flag.toUpperCase());
-			if(flag < 0) return;
 		}
 
 		// Check that key is in bounds
-		if(flag < 0 || flags > flags.length - 1) {
-			throw new Error(`Array key '${flag}' out of range`);
-		}
+		if(flag < 0 || flags > flags.length - 1) return false;
 		return flag;
 	}
 
 	async getFlag(flag) {
 		const key = this.flagStringToIndex(flag);
+		if(!key) Promise.reject("Invalid flag");
 		return await this.comlink.flag(key);
 	}
 
 	// Set or queue worker runtime flag
 	async setFlag(flag,value) {
 		const key = this.flagStringToIndex(flag);
+		if(!key) Promise.reject("Invalid flag");
+
+		// Set the flag when the worker is ready
 		if(!this.ready) {
 			this.queue.flag = [key,value];
 			return;
@@ -104,10 +105,13 @@ export default class MonkeyMaster {
 		if(!this.ready) await this.init();
 		return await new Promise((resolve,reject) => {
 			let load = null;
+			// Attempt load string as URL and fetch manifest
 			try {
 				const url = new URL(manifest);
+				// If the URL parsed but fetch failed, this promise will reject
 				load = this.comlink.fetchManifest(url.toString());
 			}
+			// Or attempt to load string as JSON if it's not a URL
 			catch {
 				load = this.comlink.loadManifest(manifest);
 			}
@@ -116,11 +120,18 @@ export default class MonkeyMaster {
 		});
 	}
 
+	async stop() {
+		return await this.comlink.abort();
+	}
+
 	// Start playback of a loaded manifest
 	async start() {
-		// Set playstate if no value is present already
-		const loop = await this.getFlag("playing");
-		if(loop < 1) await this.setFlag("playing",1);
+		const playing = await this.getFlag("playing");
+		let loop = await this.getFlag("loop");
+		loop = loop > 0 ? loop : 1; // Play once if loop has no value
+
+		if(playing > 0) return;
+		await this.setFlag("playing",loop);
 		return await this.comlink.next();
 	}
 }

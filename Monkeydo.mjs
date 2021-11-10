@@ -13,12 +13,8 @@ export default class Monkeydo extends MonkeyMaster {
 	// Execute a task
 	do(task) {
 		if(!task[1] in this.methods) return;
-		const args = task.splice(0,2);
-		this.methods[task[1]](...args);
-	}
-
-	async debug(state = true) {
-		return await this.setFlag("debug",state);
+		const args = task.splice(2);
+		this.methods[task[1]]?.(...args);
 	}
 
 	// Loop playback X times or negative number for infinite
@@ -28,7 +24,7 @@ export default class Monkeydo extends MonkeyMaster {
 		}
 		times = Math.floor(times);
 		times = Math.min(Math.max(times,0),255); // Clamp number to 8 bits
-		return await this.setFlag("playing",times);
+		return await this.setFlag("loop",times);
 	}
 
 	// Load Monkeydo manifest
