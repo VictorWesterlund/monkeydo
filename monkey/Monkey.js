@@ -22,18 +22,19 @@ class Monkey {
 		let task = null;
 
 		// Run task after delay
-		function frame(time) {
+		function frame() {
 			if(self.flags[0] === 0 || self.flags[2] === 0) return self.abort();
 			postMessage(["TASK",task]);
 			self.i++;
-			scheduleFrame(time);
+			scheduleFrame();
 		}
 
 		// Queue the next task
-		function scheduleFrame(time) {
+		function scheduleFrame() {
 			task = self.tasks[self.i];
 			//const elapsed = Math.round(performance.now() - start);
 			const wait = task[0] + start;
+			console.log(wait);
 			setTimeout(() => requestAnimationFrame(frame),wait);
 		}
 		
