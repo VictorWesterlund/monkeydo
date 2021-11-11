@@ -17,32 +17,31 @@ class Monkey {
 
 	// Task scheduler
 	next() {
-		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
-		const task = this.tasks[this.i];
+		const start = performance.now();
+		const self = this;
+		let task = null;
 
 		// Run task after delay
-		this.queue.thisTask = setTimeout(() => {
-			// Dispatch task to main thread
+		function frame(time) {
+			if(self.flags[0] === 0 || self.flags[2] === 0) return self.abort();
 			postMessage(["TASK",task]);
-			this.i++;
-		},task[0]);
-
-		// Loop until flag is 0 or infinite if 255
-		if(this.i === this.tasksLength) {
-			this.i = -1;
-			if(this.flags[1] < 255) this.flags[2]--;
+			self.i++;
+			scheduleFrame(time);
 		}
 
 		// Queue the next task
-		this.queue.nextTask = setTimeout(() => this.next(),task[0]);
+		function scheduleFrame(time) {
+			task = self.tasks[self.i];
+			//const elapsed = Math.round(performance.now() - start);
+			const wait = task[0] + start;
+			setTimeout(() => requestAnimationFrame(frame),wait);
+		}
+		
+		scheduleFrame(start);
 	}
 
 	abort() {
 		this.flags[2] = 0; // Playing: false
-		clearTimeout(this.queue.thisTask);
-		clearTimeout(this.queue.nextTask);
-		this.queue.thisTask = null;
-		this.queue.nextTask = null;
 	}
 
 	// Set or get a runtime flag
