@@ -37,11 +37,7 @@ export default class Monkeydo extends MonkeyMaster {
 
 	async play(manifest = null) {
 		if(!this.ready && !manifest) throw new Error("Can not start playback without a manifest");
-		if(manifest) {
-			const load = this.load(manifest)
-			load.then(() => this.start());
-			return;
-		}
+		if(manifest) await this.load(manifest);
 		return await this.start();
 	}
 }

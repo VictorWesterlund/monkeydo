@@ -5,40 +5,39 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 class Monkey {
 	constructor() {
 		this.flags = new Uint8ClampedArray(3);
-		this.tasks = [];
-		this.tasksLength = 0;
-		this.i = 0;
-		// Runtime task queue
-		this.queue = {
-			thisTask: null,
-			nextTask: null
+
+		this.tasks = {
+			tasks: [],
+			length: 0,
+			target: 0,
+			_i: 0,
+			set manifest(manifest) {
+				this.tasks = manifest;
+				this.length = this.tasks.length - 1;
+			},
+			get task() {
+				return this.tasks[this._i];
+			},
+			step: () => {
+				this.tasks._i++;
+				const nextTask = this.tasks.task;
+				this.tasks.target = performance.now() + nextTask[0];
+			}
 		}
 	}
 
-	// Task scheduler
-	next() {
-		const start = performance.now();
-		const self = this;
-		let task = null;
-
-		// Run task after delay
-		function frame() {
-			if(self.flags[0] === 0 || self.flags[2] === 0) return self.abort();
-			postMessage(["TASK",task]);
-			self.i++;
-			scheduleFrame();
-		}
-
-		// Queue the next task
-		function scheduleFrame() {
-			task = self.tasks[self.i];
-			//const elapsed = Math.round(performance.now() - start);
-			const wait = task[0] + start;
-			console.log(wait);
-			setTimeout(() => requestAnimationFrame(frame),wait);
+	// Main event loop, runs on every frame
+	tick() {
+		if(this === undefined) return false;
+		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
+		
+		const frame = Math.min(performance.now(),this.tasks.target);
+		if(frame == this.tasks.target) {
+			postMessage(["TASK",this.tasks.task]);
+			this.tasks.step();
 		}
 		
-		scheduleFrame(start);
+		requestAnimationFrame(this.tick.bind(this));
 	}
 
 	abort() {
@@ -73,9 +72,7 @@ class Monkey {
 					reject("Failed to load manifest");
 				}
 			}
-			this.tasks = manifest.tasks;
-			// Store length as property so we don't have to calculate the offset each iteration of next()
-			this.tasksLength = manifest.tasks.length - 1;
+			this.tasks.manifest = manifest.tasks;
 			this.flags[0] = 1; // Manifest loaded: true
 			resolve();
 		});

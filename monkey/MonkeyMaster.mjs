@@ -47,11 +47,12 @@ export default class MonkeyMaster {
 		const Monkey = Comlink.wrap(worker);
 		this.comlink = await new Monkey();
 
-		// Wait for comlink to initialize proxy and send queued flags
+		// Wait for comlink to spin up
 		return await new Promise((resolve,reject) => {
-			if(!this.comlink) reject("Failed to open proxy to worker");
+			if(!this.comlink) reject("Failed to establish Comlink with worker");
 
 			this.ready = true;
+			// Send queued flags when worker is ready
 			this.queue.sendAllFlags();
 			resolve();
 		});
@@ -132,6 +133,6 @@ export default class MonkeyMaster {
 
 		if(playing > 0) return;
 		await this.setFlag("playing",loop);
-		return await this.comlink.next();
+		return await this.comlink.tick();
 	}
 }
