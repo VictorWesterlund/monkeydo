@@ -9,7 +9,7 @@ class Monkey {
 		this.tasks = {
 			tasks: [],
 			length: 0,
-			target: 0,
+			_target: 0,
 			_i: 0,
 			set manifest(manifest) {
 				this.tasks = manifest;
@@ -18,23 +18,35 @@ class Monkey {
 			get task() {
 				return this.tasks[this._i];
 			},
-			step: () => {
-				this.tasks._i++;
-				const nextTask = this.tasks.task;
-				this.tasks.target = performance.now() + nextTask[0];
+			get target() {
+				return this._target;
 			}
 		}
 	}
 
+	// Advance to the next task or loop
+	next() {
+		// Reset index and loop if out of tasks
+		if(this.tasks._i >= this.tasks.length) {
+			this.tasks._i = -1;
+			if(this.flags[1] === 255) return; // Loop forever
+			this.flags[2] -= 1;
+		}
+		
+		this.tasks._i++;
+		const nextTask = this.tasks.task;
+		this.tasks._target = performance.now() + nextTask[0];
+	}
+
 	// Main event loop, runs on every frame
 	tick() {
-		if(this === undefined) return false;
+		if(this === undefined) return;
 		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
 		
 		const frame = Math.min(performance.now(),this.tasks.target);
 		if(frame == this.tasks.target) {
 			postMessage(["TASK",this.tasks.task]);
-			this.tasks.step();
+			this.next();
 		}
 		
 		requestAnimationFrame(this.tick.bind(this));
