@@ -5,44 +5,55 @@ importScripts("https://unpkg.com/comlink/dist/umd/comlink.js");
 class Monkey {
 	constructor() {
 		this.flags = new Uint8ClampedArray(3);
-		this.tasks = [];
-		this.tasksLength = 0;
-		this.i = 0;
-		// Runtime task queue
-		this.queue = {
-			thisTask: null,
-			nextTask: null
+
+		this.tasks = {
+			tasks: [],
+			length: 0,
+			_target: 0,
+			_i: 0,
+			set manifest(manifest) {
+				this.tasks = manifest;
+				this.length = this.tasks.length - 1;
+			},
+			get task() {
+				return this.tasks[this._i];
+			},
+			get target() {
+				return this._target;
+			}
 		}
 	}
 
-	// Task scheduler
+	// Advance to the next task or loop
 	next() {
-		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
-		const task = this.tasks[this.i];
-
-		// Run task after delay
-		this.queue.thisTask = setTimeout(() => {
-			// Dispatch task to main thread
-			postMessage(["TASK",task]);
-			this.i++;
-		},task[0]);
-
-		// Loop until flag is 0 or infinite if 255
-		if(this.i === this.tasksLength) {
-			this.i = -1;
-			if(this.flags[1] < 255) this.flags[2]--;
+		// Reset index and loop if out of tasks
+		if(this.tasks._i >= this.tasks.length) {
+			this.tasks._i = -1;
+			if(this.flags[1] === 255) return; // Loop forever
+			this.flags[2] -= 1;
 		}
+		
+		this.tasks._i++;
+		const nextTask = this.tasks.task;
+		this.tasks._target = performance.now() + nextTask[0];
+	}
 
-		// Queue the next task
-		this.queue.nextTask = setTimeout(() => this.next(),task[0]);
+	// Main event loop, runs on every frame
+	tick() {
+		if(this === undefined) return;
+		if(this.flags[0] === 0 || this.flags[2] === 0) return this.abort();
+		
+		const frame = Math.min(performance.now(),this.tasks.target);
+		if(frame == this.tasks.target) {
+			postMessage(["TASK",this.tasks.task]);
+			this.next();
+		}
+		
+		requestAnimationFrame(this.tick.bind(this));
 	}
 
 	abort() {
 		this.flags[2] = 0; // Playing: false
-		clearTimeout(this.queue.thisTask);
-		clearTimeout(this.queue.nextTask);
-		this.queue.thisTask = null;
-		this.queue.nextTask = null;
 	}
 
 	// Set or get a runtime flag
@@ -73,9 +84,7 @@ class Monkey {
 					reject("Failed to load manifest");
 				}
 			}
-			this.tasks = manifest.tasks;
-			// Store length as property so we don't have to calculate the offset each iteration of next()
-			this.tasksLength = manifest.tasks.length - 1;
+			this.tasks.manifest = manifest.tasks;
 			this.flags[0] = 1; // Manifest loaded: true
 			resolve();
 		});
