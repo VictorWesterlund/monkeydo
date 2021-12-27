@@ -101,6 +101,12 @@ export default class MonkeyMaster {
 		return update;
 	}
 
+	// Update worker's media time override with a new timestamp
+	async mediaTimeUpdate(time) {
+		if(!this.ready) await this.init();
+		this.comlink.media.time = time;
+	}
+
 	// Load a Monkeydo manifest by URL or JSON string
 	async loadManifest(manifest) {
 		if(!this.ready) await this.init();
@@ -122,6 +128,7 @@ export default class MonkeyMaster {
 	}
 
 	async stop() {
+		if(!this.ready) await this.init();
 		return await this.comlink.abort();
 	}
 

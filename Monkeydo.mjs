@@ -8,6 +8,25 @@ export default class Monkeydo extends MonkeyMaster {
 		super();
 		this.methods = {};
 		Object.assign(this.methods,methods);
+
+		this.media = {
+			_element: null,
+			get exists() {
+				return this._element instanceof HTMLMediaElement;
+			},
+			bind: (element) => {
+				if(element instanceof HTMLMediaElement !== true) throw new TypeError("Not a media element");
+				this.media.unbind();
+
+				this.media._element = element;
+				// Send timestamps to worker
+				this.media._element.addEventListener("timeupdate",event => this.mediaTimeUpdate(event.timeStamp));
+			},
+			unbind: () => {
+				this.stop();
+				this.media._element = null;
+			}
+		}
 	}
 
 	// Execute a task
@@ -38,6 +57,15 @@ export default class Monkeydo extends MonkeyMaster {
 	async play(manifest = null) {
 		if(!this.ready && !manifest) throw new Error("Can not start playback without a manifest");
 		if(manifest) await this.load(manifest);
-		return await this.start();
+
+		if(!this.media.exists) return await this.start();
+
+		// Start Monkeydo playback after media is playing
+		this.media._element.play()
+		.then(() => this.start())
+		// Poll the play function until the user interacts with the page
+		.catch(error => {
+			if(error instanceof DOMException && error.name === "NotAllowedError") this.play(manifest);
+		});
 	}
 }

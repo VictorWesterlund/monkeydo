@@ -22,6 +22,18 @@ class Monkey {
 				return this._target;
 			}
 		}
+
+		// Sync delays with media element
+		this.media = {
+			_timeStamp: null,
+			get time() {
+				return this._timeStamp;
+			},
+			set time(timeStamp) {
+				timeStamp = Math.floor(timeStamp);
+				this._timeStamp = timeStamp;
+			}
+		};
 	}
 
 	// Advance to the next task or loop
@@ -35,7 +47,9 @@ class Monkey {
 		
 		this.tasks._i++;
 		const nextTask = this.tasks.task;
-		this.tasks._target = performance.now() + nextTask[0];
+		const currentTime = this.media.time ? this.media.time : performance.now();
+
+		this.tasks._target = currentTime + nextTask[0];
 	}
 
 	// Main event loop, runs on every frame
@@ -59,6 +73,12 @@ class Monkey {
 	// Set or get a runtime flag
 	flag(index,value = null) {
 		return value ? this.flags[index] = value : this.flags[index];
+	}
+
+	// Use HTMLMediaElement.currentTime instead of performance.now()
+	setMedia(value = null) {
+		if(value instanceof HTMLMediaElement !== true) value = null;
+		this._media = value;
 	}
 
 	// Fetch and install manifest from URL
