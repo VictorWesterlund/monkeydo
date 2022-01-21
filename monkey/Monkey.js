@@ -75,19 +75,17 @@ class Monkey {
 
 	// Install a Monkeydo manifest
 	async loadManifest(manifest) {
-		return await new Promise((resolve,reject) => {
-			if(typeof manifest !== "object") {
-				try {
-					manifest = JSON.parse(manifest);
-				}
-				catch {
-					reject("Failed to load manifest");
-				}
+		if(typeof manifest !== "object") {
+			try {
+				manifest = JSON.parse(manifest);
 			}
-			this.tasks.manifest = manifest.tasks;
-			this.flags[0] = 1; // Manifest loaded: true
-			resolve();
-		});
+			catch {
+				Promise.reject("Failed to load manifest");
+			}
+		}
+		this.tasks.manifest = manifest.tasks;
+		this.flags[0] = 1; // Manifest loaded: true
+		return true;
 	}
 }
 

@@ -48,14 +48,12 @@ export default class MonkeyMaster {
 		this.comlink = await new Monkey();
 
 		// Wait for comlink to spin up
-		return await new Promise((resolve,reject) => {
-			if(!this.comlink) reject("Failed to establish Comlink with worker");
+		if(!this.comlink) Promise.reject("Failed to establish Comlink with worker");
 
-			this.ready = true;
-			// Send queued flags when worker is ready
-			this.queue.sendAllFlags();
-			resolve();
-		});
+		this.ready = true;
+		// Send queued flags when worker is ready
+		this.queue.sendAllFlags();
+		return true;
 	}
 
 	// Return a flag array index by name
@@ -104,21 +102,20 @@ export default class MonkeyMaster {
 	// Load a Monkeydo manifest by URL or JSON string
 	async loadManifest(manifest) {
 		if(!this.ready) await this.init();
-		return await new Promise((resolve,reject) => {
-			let load = null;
-			// Attempt load string as URL and fetch manifest
-			try {
-				const url = new URL(manifest);
-				// If the URL parsed but fetch failed, this promise will reject
-				load = this.comlink.fetchManifest(url.toString());
-			}
-			// Or attempt to load string as JSON if it's not a URL
-			catch {
-				load = this.comlink.loadManifest(manifest);
-			}
-			load.then(() => resolve())
-			.catch(() => reject("Failed to load manifest"));
-		});
+		let load = null;
+		// Attempt load string as URL and fetch manifest
+		try {
+			const url = new URL(manifest);
+			// If the URL parsed but fetch failed, this promise will reject
+			load = this.comlink.fetchManifest(url.toString());
+		}
+		// Or attempt to load string as JSON if it's not a URL
+		catch {
+			load = this.comlink.loadManifest(manifest);
+		}
+
+		load.then(() => Promise.resolve())
+		.catch(() => Promise.reject("Failed to load manifest"));
 	}
 
 	async stop() {
